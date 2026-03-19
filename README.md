@@ -21,9 +21,6 @@ When a user drops an audio file into a specific Google Drive folder, this workfl
    * *HTTP Request 2:* Pushes the dynamically generated JSON payload to populate the form with a description and formatted radio-button questions.
 6. **Delivery:** A Gmail node automatically emails the `responderUri` (the live quiz link) to the designated mailing list.
 
-## 📸 Screenshots
-*(Insert your workflow and form screenshots here)*
-
 ## 🚀 How to Use (For Developers)
 1. Clone this repository.
 2. Import the `workflow.json` file into your n8n instance.
