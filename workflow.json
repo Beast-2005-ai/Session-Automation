@@ -1,0 +1,361 @@
+{
+  "name": "Session Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1CDJ38USYSrQtnELGTVF_5CiRoduJhLVk",
+          "mode": "list",
+          "cachedResultName": "Sessions",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1CDJ38USYSrQtnELGTVF_5CiRoduJhLVk"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "962ae70e-2683-4260-b2fc-954f7a2e45be",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "35XQZwiqFoBbje9A",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "4c70e5f7-d0f9-432f-bf4c-cac9f5099bcd",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "35XQZwiqFoBbje9A",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_GROQ_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "whisper-large-v3"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "e72f0937-0314-4653-a831-ec63407b3752",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert professor. Read the following lecture transcript and create a short summary and exactly 5 multiple-choice questions.\n\nYou MUST format your entire response as a raw JSON object. Do not use markdown formatting like ```json. Use this exact structure:\n{\n  \"summary\": \"Your detailed summary here...\",\n  \"mcqs\": [\n    {\n      \"question\": \"Question 1 text?\",\n      \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],\n      \"correct_answer\": \"Option B\"\n    }\n  ]\n}\n\nTRANSCRIPT TO PROCESS: {{ $json.text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "0a793971-2c4c-463f-9610-66d431ed07e1",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "8uuJ7ZB00Hfh3I9b",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are an expert professor. Read the following lecture transcript and create a short summary and exactly 5 multiple-choice questions.\n\nYou MUST format your entire response as a raw JSON object. Do not use markdown formatting like ```json. Use this exact structure:\n{\n  \"summary\": \"Your detailed summary here...\",\n  \"mcqs\": [\n    {\n      \"question\": \"Question 1 text?\",\n      \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],\n      \"correct_answer\": \"Option B\"\n    }\n  ]\n}\n\nTRANSCRIPT TO PROCESS:"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGeminiTool",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        208
+      ],
+      "id": "b283e3bd-4d28-4128-b8e4-25bb864e05a1",
+      "name": "Message a model in Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "8uuJ7ZB00Hfh3I9b",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let rawText = $input.first().json.content.parts[0].text;\nlet cleanText = rawText.replace(/```json/gi, \"\").replace(/```/gi, \"\").trim();\nlet parsedData = JSON.parse(cleanText);\n\nlet requests = [];\n\n// 1. Add Summary\nrequests.push({\n  \"updateFormInfo\": {\n    \"info\": {\n      \"description\": parsedData.summary\n    },\n    \"updateMask\": \"description\"\n  }\n});\n\n// 2. Add MCQs\nlet index = 0;\nparsedData.mcqs.forEach((mcq) => {\n  let options = mcq.options.map(opt => ({ \"value\": opt }));\n  \n  requests.push({\n    \"createItem\": {\n      \"item\": {\n        \"title\": mcq.question,\n        \"questionItem\": {\n          \"question\": {\n            \"required\": true,\n            \"choiceQuestion\": {\n              \"type\": \"RADIO\",\n              \"options\": options\n            }\n          }\n        }\n      },\n      \"location\": {\n        \"index\": index\n      }\n    }\n  });\n  index++;\n});\n\nreturn [{ json: { formRequests: requests } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        0
+      ],
+      "id": "4ad38b8f-01e2-4864-8966-5111c6c36ff0",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://forms.googleapis.com/v1/forms",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"info\": {\n    \"title\": \"Automated Lecture Quiz\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "2489300e-8525-4b26-a16f-b278fff4a2d9",
+      "name": "HTTP Request1",
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "yucL2GkUbPtg3fDW",
+          "name": "Google account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://forms.googleapis.com/v1/forms/{{ $json.formId }}:batchUpdate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"requests\": {{ JSON.stringify($('Code in JavaScript').item.json.formRequests) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1376,
+        16
+      ],
+      "id": "f2732253-1a05-41c4-a680-c5b67876bffc",
+      "name": "HTTP Request2",
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "yucL2GkUbPtg3fDW",
+          "name": "Google account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "sujal.2005.gundlapelli@gmail.com",
+        "subject": "New Quiz !!!",
+        "message": "=Hello! Your AI-generated study quiz is ready. Click the link below to take it: {{ $('HTTP Request1').item.json.responderUri }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1584,
+        16
+      ],
+      "id": "81dc9d55-1363-4679-935f-4f8fca447a80",
+      "name": "Send a message",
+      "webhookId": "e6b0f4a6-bd85-4ed1-a184-4cf91fb517ec",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9LiTViYSd3ShBHLe",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model in Google Gemini": {
+      "ai_tool": [
+        [
+          {
+            "node": "Message a model",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "20f193cc-0459-46d2-8a62-c21b6744c3f4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0dce34f3ab1ee7a54d4964fb95eea8e8d02006676c9f943f0c4d2cdc15856f20"
+  },
+  "id": "DYVAunRSr5Q7hmYj",
+  "tags": []
+}
